@@ -90,6 +90,7 @@ var SearchModel = {
     filterinstantly: m.prop(true),
     compactview: m.prop(false),
     literalview: m.prop(false),
+    exactview: m.prop(false),
 
     // Holds the values from the response
     totalhits: m.prop(0),
@@ -124,6 +125,12 @@ var SearchModel = {
             localStorage.setItem('toggleliteral', JSON.stringify(!SearchModel.literalview()));
         }
         SearchModel.literalview(!SearchModel.literalview());
+    },
+    toggleexact: function() {
+        if (window.localStorage) {
+            localStorage.setItem('toggleexact', JSON.stringify(!SearchModel.exactview()));
+        }
+        SearchModel.exactview(!SearchModel.exactview());
     },
     get_string_title: function() {
         var repos = '';
@@ -286,6 +293,13 @@ var SearchModel = {
 
         return '';
     },
+    get_exact_url_filter: function() {
+        if (SearchModel.exactview() === true) {
+            return '&exact=true';
+        }
+
+        return '';
+    },
     setstatechange: function(pagequery, isstatechange) {
         // set the state
         if (isstatechange === undefined) {
@@ -297,15 +311,16 @@ var SearchModel = {
                 srcfilters: SearchModel.activesrcfilters(),
                 currentpage: SearchModel.currentpage(),
                 pathvalue: SearchModel.pathvalue()
-            }, 'search', '?q=' + 
-                        encodeURIComponent(SearchModel.searchvalue()) + 
-                        SearchModel.get_lang_url_filters() + 
-                        SearchModel.get_repo_url_filters() + 
-                        SearchModel.get_own_url_filters() + 
-                        SearchModel.get_src_url_filters() + 
-                        SearchModel.get_path_url_filters() + 
-                        SearchModel.get_lit_url_filter() +
-                        pagequery);
+            }, 'search', '?q=' +
+                encodeURIComponent(SearchModel.searchvalue()) +
+                SearchModel.get_lang_url_filters() +
+                SearchModel.get_repo_url_filters() +
+                SearchModel.get_own_url_filters() +
+                SearchModel.get_src_url_filters() +
+                SearchModel.get_path_url_filters() +
+                SearchModel.get_lit_url_filter() +
+                SearchModel.get_exact_url_filter() +
+                pagequery);
         }
     },
     get_search_query_string: function(page) {
@@ -336,7 +351,19 @@ var SearchModel = {
         SearchModel.activeownfilters(JSON.parse(JSON.stringify(SearchModel.getfacetfilter('owner'))));
         SearchModel.activesrcfilters(JSON.parse(JSON.stringify(SearchModel.getfacetfilter('source'))));
 
-        var queryurl = '?q=' + encodeURIComponent(SearchModel.searchvalue()) + lang + repo + own + src + pathvalue + '&p=' + searchpage;
+        // TODO VERIFICAR SE É NECESSÁRIO OU FICARÁ NO BACKEND
+        var qval = SearchModel.searchvalue();
+        // If Exact Search is enabled and the query is not a regex (/.../) and not already quoted, wrap it in quotes for phrase match
+        if (SearchModel.exactview && typeof SearchModel.exactview === 'function' && SearchModel.exactview() === true) {
+            var trimmed = (qval || '').trim();
+            var isRegex = trimmed.startsWith('/') && trimmed.endsWith('/');
+            var isQuoted = trimmed.startsWith('"') && trimmed.endsWith('"');
+            if (!isRegex && !isQuoted && trimmed.length > 0) {
+                qval = '"' + trimmed + '"';
+            }
+        }
+
+        var queryurl = '?q=' + encodeURIComponent(qval) + lang + repo + own + src + pathvalue + '&p=' + searchpage;
         return queryurl;
     },
     search: function(page, isstatechange) {
@@ -386,80 +413,80 @@ var SearchModel = {
 var SearchComponent = {
     view: function(ctrl) {
         return m("div", [
-                m.component(SearchOptionsComponent),
-                m.component(SearchCountComponent, { 
-                    totalhits: SearchModel.totalhits(), 
-                    query: SearchModel.query(),
-                    repofilters: SearchModel.activerepositoryfilters(),
-                    languagefilters: SearchModel.activelangfilters(),
-                    ownerfilters: SearchModel.activeownfilters()
-                }),
-                
-                m.component(SearchLoadingComponent, {
-                    currentlyloading: SearchModel.currentlyloading()
-                }),
-                m('div.row', [
-                    m('div.col-md-3.search-filters-container.search-filters', [
-                        m.component(SearchNextPreviousComponent, {
-                            currentpage: SearchModel.currentpage(), 
-                            pages: SearchModel.pages(),
-                            setpage: SearchModel.setpage,
-                            search: SearchModel.search,
-                            totalhits: SearchModel.totalhits(),
-                        }),
-                        m.component(SearchAlternateFilterComponent, {
-                            query: SearchModel.query(),
-                            altquery: SearchModel.altquery()
-                        }),
-                        m.component(SearchSourcesFilterComponent, {
-                            sourcefilters: SearchModel.sourcefilters(),
-                            search: SearchModel.search,
-                            filterinstantly: SearchModel.filterinstantly
-                        }),
-                        m.component(SearchRepositoriesFilterComponent, {
-                            repofilters: SearchModel.repofilters(),
-                            search: SearchModel.search,
-                            filterinstantly: SearchModel.filterinstantly
-                        }),
-                        m.component(SearchLanguagesFilterComponent, {
-                            languagefilters: SearchModel.languagefilters(),
-                            search: SearchModel.search,
-                            filterinstantly: SearchModel.filterinstantly
-                        }),
-                        m.component(SearchOwnersFilterComponent),
-                        m.component(SearchPathFilterComponent),
-                        m.component(SearchButtonFilterComponent, {
-                            totalhits: SearchModel.totalhits(),
-                            clearfilters: SearchModel.clearfilters,
-                            search: SearchModel.search,
-                            languagefilters: SearchModel.getfacetfilter('language'),
-                            repofilters: SearchModel.getfacetfilter('repository'),
-                            ownfilters: SearchModel.getfacetfilter('owner'),
-                            sourcefilters: SearchModel.getfacetfilter('source'),
-                            filterinstantly: SearchModel.filterinstantly
-                        }),
-                        m.component(FilterOptionsComponent, {
-                            filterinstantly: SearchModel.filterinstantly
-                        }),
-                        m.component(RSSComponent)
-                    ]),
-                    m('div.col-md-9.search-results', [
-                        m.component(SearchNoResultsComponent, {
-                            totalhits: SearchModel.totalhits(),
-                            query: SearchModel.query(),
-                            altquery: SearchModel.altquery(),
-                        }),
-                        m.component(SearchResultsComponent, { 
-                            coderesults: SearchModel.coderesults()
-                        })
-                    ]),
-                    m.component(SearchPagesComponent, { 
+            m.component(SearchOptionsComponent),
+            m.component(SearchCountComponent, {
+                totalhits: SearchModel.totalhits(),
+                query: SearchModel.query(),
+                repofilters: SearchModel.activerepositoryfilters(),
+                languagefilters: SearchModel.activelangfilters(),
+                ownerfilters: SearchModel.activeownfilters()
+            }),
+
+            m.component(SearchLoadingComponent, {
+                currentlyloading: SearchModel.currentlyloading()
+            }),
+            m('div.row', [
+                m('div.col-md-3.search-filters-container.search-filters', [
+                    m.component(SearchNextPreviousComponent, {
                         currentpage: SearchModel.currentpage(),
                         pages: SearchModel.pages(),
-                        search: SearchModel.search
+                        setpage: SearchModel.setpage,
+                        search: SearchModel.search,
+                        totalhits: SearchModel.totalhits(),
+                    }),
+                    m.component(SearchAlternateFilterComponent, {
+                        query: SearchModel.query(),
+                        altquery: SearchModel.altquery()
+                    }),
+                    m.component(SearchSourcesFilterComponent, {
+                        sourcefilters: SearchModel.sourcefilters(),
+                        search: SearchModel.search,
+                        filterinstantly: SearchModel.filterinstantly
+                    }),
+                    m.component(SearchRepositoriesFilterComponent, {
+                        repofilters: SearchModel.repofilters(),
+                        search: SearchModel.search,
+                        filterinstantly: SearchModel.filterinstantly
+                    }),
+                    m.component(SearchLanguagesFilterComponent, {
+                        languagefilters: SearchModel.languagefilters(),
+                        search: SearchModel.search,
+                        filterinstantly: SearchModel.filterinstantly
+                    }),
+                    m.component(SearchOwnersFilterComponent),
+                    m.component(SearchPathFilterComponent),
+                    m.component(SearchButtonFilterComponent, {
+                        totalhits: SearchModel.totalhits(),
+                        clearfilters: SearchModel.clearfilters,
+                        search: SearchModel.search,
+                        languagefilters: SearchModel.getfacetfilter('language'),
+                        repofilters: SearchModel.getfacetfilter('repository'),
+                        ownfilters: SearchModel.getfacetfilter('owner'),
+                        sourcefilters: SearchModel.getfacetfilter('source'),
+                        filterinstantly: SearchModel.filterinstantly
+                    }),
+                    m.component(FilterOptionsComponent, {
+                        filterinstantly: SearchModel.filterinstantly
+                    }),
+                    m.component(RSSComponent)
+                ]),
+                m('div.col-md-9.search-results', [
+                    m.component(SearchNoResultsComponent, {
+                        totalhits: SearchModel.totalhits(),
+                        query: SearchModel.query(),
+                        altquery: SearchModel.altquery(),
+                    }),
+                    m.component(SearchResultsComponent, {
+                        coderesults: SearchModel.coderesults()
                     })
-                ])
-            ]);
+                ]),
+                m.component(SearchPagesComponent, {
+                    currentpage: SearchModel.currentpage(),
+                    pages: SearchModel.pages(),
+                    search: SearchModel.search
+                })
+            ])
+        ]);
     }
 }
 
@@ -486,12 +513,12 @@ var SearchNoResultsComponent = {
             if (args.altquery.length === 1) {
                 message = 'Try the following search instead';
             }
-            
+
             suggestion = m('div', [
                 m('h5', message),
                 m('ul', { style: { 'list-style-type': 'none' } },
-                    _.map(args.altquery, function (e) { 
-                        return m('li', m('a', { href: '', onclick: function () { ctrl.doaltquery(e); } }, e)); 
+                    _.map(args.altquery, function (e) {
+                        return m('li', m('a', { href: '', onclick: function () { ctrl.doaltquery(e); } }, e));
                     } )
                 )
             ]);
@@ -527,17 +554,17 @@ var SearchNextPreviousComponent = {
         return m('div', [
             m('h5', 'Page ' +  (SearchModel.currentpage() + 1) + ' of ' + (args.pages.length == 0 ? 1 : args.pages.length)),
             m('div.center',
-                m('input.btn.btn-xs.btn-success.filter-button', { 
-                    type: 'submit', 
+                m('input.btn.btn-xs.btn-success.filter-button', {
+                    type: 'submit',
                     disabled: previouspageoptions,
-                    onclick: function() { args.search((SearchModel.currentpage() - 1)); }, 
+                    onclick: function() { args.search((SearchModel.currentpage() - 1)); },
                     value: '◀ Previous' }
                 ),
                 m('span', m.trust('&nbsp;')),
-                m('input.btn.btn-xs.btn-success.filter-button', { 
-                    type: 'submit', 
+                m('input.btn.btn-xs.btn-success.filter-button', {
+                    type: 'submit',
                     disabled: nextpageoptions,
-                    onclick: function() { args.search((SearchModel.currentpage() + 1)); }, 
+                    onclick: function() { args.search((SearchModel.currentpage() + 1)); },
                     value: 'Next ▶' }
                 )
             )
@@ -564,14 +591,14 @@ var SearchPagesComponent = {
     controller: function() {
     },
     view: function(ctrl, args) {
-        return m('div.search-pagination', 
+        return m('div.search-pagination',
             m('ul.pagination', [
                 _.map(args.pages, function (res) {
                     return m('li', { class: res == SearchModel.currentpage() ? 'active' : '' },
-                        m('a', { onclick: function() { 
-                            args.search(res); 
-                            window.scrollTo(0, 0);
-                        } }, res + 1)
+                        m('a', { onclick: function() {
+                                args.search(res);
+                                window.scrollTo(0, 0);
+                            } }, res + 1)
                     )
                 })
             ])
@@ -590,10 +617,10 @@ var SearchButtonFilterComponent = {
         if (args.totalhits === 0) {
             return m('div', [
                 m('h5', 'Filter Results'),
-                m('div.center', 
-                    m('input.btn.btn-xs.btn-success.filter-button', { 
-                        type: 'submit', 
-                        onclick: function() { args.clearfilters(); args.search(); }, 
+                m('div.center',
+                    m('input.btn.btn-xs.btn-success.filter-button', {
+                        type: 'submit',
+                        onclick: function() { args.clearfilters(); args.search(); },
                         value: 'Remove' }),
                     m('span', m.trust('&nbsp;')),
                     m('span.filter-button', {'style': {'height': '1px', 'float': 'right'}}, '')
@@ -603,17 +630,17 @@ var SearchButtonFilterComponent = {
 
         return m('div', [
             m('h5', 'Filter Results'),
-            m('div.center', 
-                m('input.btn.btn-xs.btn-success.filter-button', { 
-                    type: 'submit', 
-                    onclick: function() { args.clearfilters(); args.search(); }, 
+            m('div.center',
+                m('input.btn.btn-xs.btn-success.filter-button', {
+                    type: 'submit',
+                    onclick: function() { args.clearfilters(); args.search(); },
                     value: 'Remove' }
                 ),
                 m('span', m.trust('&nbsp;')),
-                m('input.btn.btn-xs.btn-success.filter-button', { 
+                m('input.btn.btn-xs.btn-success.filter-button', {
                     type: 'submit',
                     disabled: SearchModel.filterinstantly(),
-                    onclick: function() { args.search() }, 
+                    onclick: function() { args.search() },
                     value: 'Apply' }
                 )
             )
@@ -633,6 +660,10 @@ var FilterOptionsComponent = {
             toggle_literal: function() {
                 SearchModel.toggleliteral();
                 SearchModel.search();
+            },
+            toggle_exact: function() {
+                SearchModel.toggleexact();
+                SearchModel.search();
             }
         }
     },
@@ -640,7 +671,8 @@ var FilterOptionsComponent = {
         var instantparams = { type: 'checkbox', onclick: ctrl.toggle_instant };
         var compactparams = { type: 'checkbox', onclick: ctrl.toggle_compact };
         var literalparams = { type: 'checkbox', onclick: ctrl.toggle_literal };
-        
+        var exactparams = { type: 'checkbox', onclick: ctrl.toggle_exact };
+
         if (SearchModel.filterinstantly()) {
             instantparams.checked = 'checked'
         }
@@ -653,31 +685,40 @@ var FilterOptionsComponent = {
             literalparams.checked = 'checked'
         }
 
+        if (SearchModel.exactview()) {
+            exactparams.checked = 'checked'
+        }
 
-        return m('div', 
+        return m('div',
             m('h5', 'Search Options'),
             m('div', [
-                m('div.checkbox', 
+                m('div.checkbox',
                     m('label', [
                         m('input', instantparams),
                         m('span', 'Apply Filters Instantly')
                     ])
                 ),
-                m('div.checkbox', 
+                m('div.checkbox',
                     m('label', [
                         m('input', compactparams),
                         m('span', 'Compact View')
                     ])
                 ),
-                m('div.checkbox', 
+                m('div.checkbox',
                     m('label', [
                         m('input', literalparams),
                         m('span', [
                             m('span', 'Literal Search '),
-                            m('small', 
+                            m('small',
                                 m('a', {href: '/documentation/#literal'}, '(help)')
                             )
                         ])
+                    ])
+                ),
+                m('div.checkbox',
+                    m('label', [
+                        m('input', exactparams),
+                        m('span', 'Exact Search')
                     ])
                 )
             ])
@@ -687,9 +728,9 @@ var FilterOptionsComponent = {
 
 var RSSComponent = {
     view: function(ctrl, args) {
-        return m('div', 
+        return m('div',
             m('div', [
-                m('div.checkbox', 
+                m('div.checkbox',
                     m('label', [
                         m('a', {'href': '/api/codesearch/rss/' + SearchModel.get_search_query_string() }, 'RSS Feed of Search')
                     ])
@@ -701,7 +742,7 @@ var RSSComponent = {
 
 var SearchSourcesFilterComponent = {
     controller: function() {
-        
+
         var showall = false;
         var trimlength = 5;
 
@@ -714,8 +755,8 @@ var SearchSourcesFilterComponent = {
                 }
 
                 if (SearchModel.sourcefiltertext().length !== 0) {
-                    toreturn = _.filter(toreturn, function (e) { 
-                        return e.source.toLowerCase().indexOf(SearchModel.sourcefiltertext().toLowerCase()) !== -1; 
+                    toreturn = _.filter(toreturn, function (e) {
+                        return e.source.toLowerCase().indexOf(SearchModel.sourcefiltertext().toLowerCase()) !== -1;
                     } );
                 }
 
@@ -771,7 +812,7 @@ var SearchSourcesFilterComponent = {
             }),
             _.map(ctrl.trimrepo(args.sourcefilters), function(res, ind) {
                 return m.component(FilterCheckboxComponent, {
-                    onclick: function() { 
+                    onclick: function() {
                         ctrl.clickenvent(res.source);
                         if (SearchModel.filterinstantly()) {
                             args.search();
@@ -789,7 +830,7 @@ var SearchSourcesFilterComponent = {
 
 var SearchRepositoriesFilterComponent = {
     controller: function() {
-        
+
         var showall = false;
         var trimlength = 5;
 
@@ -802,8 +843,8 @@ var SearchRepositoriesFilterComponent = {
                 }
 
                 if (SearchModel.repofiltertext().length !== 0) {
-                    toreturn = _.filter(toreturn, function (e) { 
-                        return e.repoName.toLowerCase().indexOf(SearchModel.repofiltertext().toLowerCase()) !== -1; 
+                    toreturn = _.filter(toreturn, function (e) {
+                        return e.repoName.toLowerCase().indexOf(SearchModel.repofiltertext().toLowerCase()) !== -1;
                     } );
                 }
 
@@ -858,7 +899,7 @@ var SearchRepositoriesFilterComponent = {
             }),
             _.map(ctrl.trimrepo(args.repofilters), function(res, ind) {
                 return m.component(FilterCheckboxComponent, {
-                    onclick: function() { 
+                    onclick: function() {
                         ctrl.clickenvent(res.repoName);
                         if (SearchModel.filterinstantly()) {
                             args.search();
@@ -879,7 +920,7 @@ var SearchLanguagesFilterComponent = {
 
         var showall = false;
         var trimlength = 5;
-        
+
         return {
             trimlanguage: function (languagefilters) {
                 var toreturn = languagefilters;
@@ -889,8 +930,8 @@ var SearchLanguagesFilterComponent = {
                 }
 
                 if (SearchModel.langfiltertext().length !== 0) {
-                    toreturn = _.filter(toreturn, function (e) { 
-                        return e.languageName.toLowerCase().indexOf(SearchModel.langfiltertext().toLowerCase()) !== -1; 
+                    toreturn = _.filter(toreturn, function (e) {
+                        return e.languageName.toLowerCase().indexOf(SearchModel.langfiltertext().toLowerCase()) !== -1;
                     });
                 }
 
@@ -946,8 +987,8 @@ var SearchLanguagesFilterComponent = {
             }),
             _.map(ctrl.trimlanguage(args.languagefilters), function(res, ind) {
                 return m.component(FilterCheckboxComponent, {
-                    onclick: function() { 
-                        ctrl.clickenvent(res.languageName); 
+                    onclick: function() {
+                        ctrl.clickenvent(res.languageName);
                         if (SearchModel.filterinstantly()) {
                             args.search();
                         }
@@ -967,7 +1008,7 @@ var SearchOwnersFilterComponent = {
 
         var showall = false;
         var trimlength = 5;
-        
+
         return {
             trimlanguage: function (ownerfilters) {
                 var toreturn = ownerfilters;
@@ -977,8 +1018,8 @@ var SearchOwnersFilterComponent = {
                 }
 
                 if (SearchModel.ownerfiltertext().length !== 0) {
-                    toreturn = _.filter(toreturn, function (e) { 
-                        return e.owner.toLowerCase().indexOf(SearchModel.ownerfiltertext().toLowerCase()) !== -1; 
+                    toreturn = _.filter(toreturn, function (e) {
+                        return e.owner.toLowerCase().indexOf(SearchModel.ownerfiltertext().toLowerCase()) !== -1;
                     });
                 }
 
@@ -1036,8 +1077,8 @@ var SearchOwnersFilterComponent = {
             }),
             _.map(ctrl.trimlanguage(SearchModel.ownerfilters()), function(res, ind) {
                 return m.component(FilterCheckboxComponent, {
-                    onclick: function() { 
-                        ctrl.clickenvent(res.owner); 
+                    onclick: function() {
+                        ctrl.clickenvent(res.owner);
                     },
                     value: res.owner,
                     count: res.count,
@@ -1053,11 +1094,11 @@ var SearchPathFilterComponent = {
     view: function(ctrl, args) {
         return m('div', [
             m('h5', 'Path Filter'),
-            m('div.center', 
-                m('input.btn.btn-xs.btn-success.filter-button', { 
-                    type: 'submit', 
+            m('div.center',
+                m('input.btn.btn-xs.btn-success.filter-button', {
+                    type: 'submit',
                     disabled: SearchModel.pathvalue() === '',
-                    onclick: function() { SearchModel.pathvalue(''); SearchModel.search(); }, 
+                    onclick: function() { SearchModel.pathvalue(''); SearchModel.search(); },
                     value: 'Clear' }
                 ),
                 m('span', m.trust('&nbsp;')),
@@ -1072,12 +1113,12 @@ var SearchPathFilterComponent = {
 var FilterCheckboxComponent = {
     view: function(ctrl, args) {
         var inputparams = { type: 'checkbox', onclick: args.onclick };
-        
+
         if (args.checked) {
             inputparams.checked = 'checked'
         }
 
-        return m('div.checkbox', 
+        return m('div.checkbox',
             m('label', [
                 m('input', inputparams),
                 m('span', args.value),
@@ -1096,16 +1137,16 @@ var SearchOptionsComponent = {
         }
     },
     view: function(ctrl, args) {
-        return m('div', { class: 'search-options'}, 
+        return m('div', { class: 'search-options'},
             m('form', { onsubmit: function(event) { ctrl.dosearch(); return false; } },
                 m('div.form-inline', [
-                    m('div.form-group', 
+                    m('div.form-group',
                         m('input.form-control', {
-                            autocapitalize: 'off', 
+                            autocapitalize: 'off',
                             autocorrect: 'off',
                             autocomplete: 'off',
                             spellcheck: 'false',
-                            size:'50', 
+                            size:'50',
                             placeholder: 'Search Expression',
                             onkeyup: m.withAttr('value', SearchModel.searchvalue),
                             value: SearchModel.searchvalue(),
@@ -1158,7 +1199,7 @@ var SearchAlternateFilterComponent = {
             m('h5', 'Alternate Searches'),
             m('div', [
                 _.map(args.altquery, function(res) {
-                    return m('div.checkbox', 
+                    return m('div.checkbox',
                         m('label', [
                             m('a', { onclick: function () { ctrl.doaltquery(res)} }, res)
                         ])
@@ -1198,8 +1239,8 @@ var SearchResultsComponent = {
                         running += '_'
                     }
 
-                    running += split[i]; 
-                  
+                    running += split[i];
+
                     link.push({
                         'display': split[i],
                         'value': running,
@@ -1210,10 +1251,10 @@ var SearchResultsComponent = {
                 return _.map(link, function(res) {
                     return res['last'] ? m('span', '/' + res['display']) : m('span', [
                         m('span', '/'),
-                        m('a', { onclick: function () { 
-                            SearchModel.pathvalue(res['value']);
-                            SearchModel.search();
-                        }}, res['display'])
+                        m('a', { onclick: function () {
+                                SearchModel.pathvalue(res['value']);
+                                SearchModel.search();
+                            }}, res['display'])
                     ]);
                 });
             }
@@ -1221,35 +1262,35 @@ var SearchResultsComponent = {
     },
     view: function(ctrl, args) {
         return m('div', [
-                _.map(args.coderesults, function(res) {
-                    return m('div.code-result', [
-                        m('div', 
-                            m('h5', [
-                                m('div', [
-                                    m('a', { href: ctrl.gethref(res) }, ctrl.getatag(res)),
-                                    m('span', ' in '),
-                                    m('a', { href: ctrl.getrepositoryhref(res) }, res.repoName),
-                                    m('small', [
-                                        m('span', ' '),
-                                        ctrl.getlinkvalue(res),
-                                        ctrl.getsmallvalue(res)
-                                    ])
-                                ]),
-                                
-                            ])
-                        ),
-                        SearchModel.compactview() ? m('div') : m('ol.code-result', [
-                            _.map(res.matchingResults, function(line) {
-                                return m('li', { value: line.lineNumber }, 
-                                    m('a', { 'href':  ctrl.gethreflineno(res, line.lineNumber) },
-                                        m('pre', m.trust(line.line))
-                                    )
-                                );
-                            })
-                        ]),
-                        m('hr', {class: 'spacer'})
-                    ]);
-                })
+            _.map(args.coderesults, function(res) {
+                return m('div.code-result', [
+                    m('div',
+                        m('h5', [
+                            m('div', [
+                                m('a', { href: ctrl.gethref(res) }, ctrl.getatag(res)),
+                                m('span', ' in '),
+                                m('a', { href: ctrl.getrepositoryhref(res) }, res.repoName),
+                                m('small', [
+                                    m('span', ' '),
+                                    ctrl.getlinkvalue(res),
+                                    ctrl.getsmallvalue(res)
+                                ])
+                            ]),
+
+                        ])
+                    ),
+                    SearchModel.compactview() ? m('div') : m('ol.code-result', [
+                        _.map(res.matchingResults, function(line) {
+                            return m('li', { value: line.lineNumber },
+                                m('a', { 'href':  ctrl.gethreflineno(res, line.lineNumber) },
+                                    m('pre', m.trust(line.line))
+                                )
+                            );
+                        })
+                    ]),
+                    m('hr', {class: 'spacer'})
+                ]);
+            })
         ]);
     }
 }
@@ -1276,28 +1317,28 @@ window.onpopstate = function(event) {
     }
 };
 
-// For direct links to search results 
+// For direct links to search results
 if (typeof preload !== 'undefined') {
     SearchModel.searchvalue(preload.query);
     SearchModel.currentpage(preload.page);
 
     SearchModel.activelangfilters(preload.languageFacets);
-    _.each(preload.languageFacets, function(e) { 
+    _.each(preload.languageFacets, function(e) {
         SearchModel.toggle_filter('language', e);
     });
 
     SearchModel.activerepositoryfilters(preload.repositoryFacets);
-    _.each(preload.repositoryFacets, function(e) { 
+    _.each(preload.repositoryFacets, function(e) {
         SearchModel.toggle_filter('repo', e);
     });
 
     SearchModel.activeownfilters(preload.ownerFacets);
-    _.each(preload.ownerFacets, function(e) { 
+    _.each(preload.ownerFacets, function(e) {
         SearchModel.toggle_filter('owner', e);
     });
 
     SearchModel.activesrcfilters(preload.srcFacets);
-    _.each(preload.srcFacets, function(e) { 
+    _.each(preload.srcFacets, function(e) {
         SearchModel.toggle_filter('source', e);
     });
 
@@ -1321,11 +1362,15 @@ if (window.localStorage) {
     tmp = JSON.parse(localStorage.getItem('toggleliteral'));
     tmp !== null ? SearchModel.literalview(tmp) : SearchModel.literalview(false);
 
+    tmp = JSON.parse(localStorage.getItem('toggleexact'));
+    tmp !== null ? SearchModel.exactview(tmp) : SearchModel.exactview(false);
+
     tmp = JSON.parse(localStorage.getItem('togglecompact'));
     tmp !== null ? SearchModel.compactview(tmp) : SearchModel.compactview(false);
 }
 else {
     SearchModel.filterinstantly(true);
     SearchModel.literalview(false);
+    SearchModel.exactview(false);
     SearchModel.compactview(false);
 }

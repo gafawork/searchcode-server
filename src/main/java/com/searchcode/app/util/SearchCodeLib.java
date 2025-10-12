@@ -585,7 +585,7 @@ public class SearchCodeLib {
 
             stream.end();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Erro ao processar o texto");
+            throw new IllegalArgumentException("Error processing text");
         }
 
         return returnFunction.toString();

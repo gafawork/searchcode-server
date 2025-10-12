@@ -113,6 +113,12 @@ public class Values {
     public static final String HOST_NAME = "host_name";
     public static final String DEFAULT_HOST_NAME = "localhost:8080";
 
+    // Analyzer / Snowball configuration
+    public static final String ANALYZER_SNOWBALL_ENABLED = "analyzer_snowball_enabled";
+    public static final String DEFAULT_ANALYZER_SNOWBALL_ENABLED = "true";
+    public static final String ANALYZER_SNOWBALL_STEMMER_CLASS = "analyzer_snowball_stemmer_class";
+    public static final String DEFAULT_ANALYZER_SNOWBALL_STEMMER_CLASS = "org.tartarus.snowball.ext.PortugueseStemmer";
+
     // Used for both searchcoee server and searchcode.com
     public static final String DEFAULT_HIGHLIGHTER = "javascript";
     public static final String HIGHLIGHTER = "highlighter";

@@ -316,6 +316,8 @@ public class CodeRouteService {
             var ownsQueryString = Values.EMPTYSTRING;
             var sourceQueryString = Values.EMPTYSTRING;
 
+            var isExact = request.queryParams().contains("exact") && request.queryParams("exact").equals("true");
+
             var facets = new HashMap<String, String[]>();
 
             if (request.queryParams().contains("repo")) {
@@ -396,7 +398,7 @@ public class CodeRouteService {
                 }
             }
 
-            var searchResult = this.indexService.search(query, facets, page, false);
+            var searchResult = this.indexService.search(query, facets, page, false, isExact);
             searchResult.setCodeResultList(this.codeMatcher.formatResults(searchResult.getCodeResultList(), query, true));
 
             // Set chosen filters to be selected

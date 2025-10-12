@@ -493,20 +493,49 @@ public abstract class IndexBaseRepoJob implements Job {
     }
 
     private void createFile(String repoLocation, String type) throws IOException {
-        File file = new File(repoLocation, "/searchcode." + type + ".success");
-        boolean success = file.mkdir();
-
-        if (!success) {
-            throw new IOException("Unable to create directory " + file.getAbsolutePath());
+        // Create a marker file (not a directory) so deletion works reliably across OSes
+        File file = Paths.get(repoLocation, "searchcode." + type + ".success").toFile();
+        if (!file.exists()) {
+            // Ensure parent directories exist
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                if (!parent.mkdirs() && !parent.exists()) {
+                    throw new IOException("Unable to create parent directories for " + file.getAbsolutePath());
+                }
+            }
+            if (!file.createNewFile()) {
+                throw new IOException("Unable to create file " + file.getAbsolutePath());
+            }
         }
     }
 
     private void deleteFile(String repoLocation, String type) throws IOException {
-        File file = new File(repoLocation, "/searchcode." + type + ".success");
-        boolean success = file.delete();
-
-        if (!success) {
-            throw new IOException("Unable to delete directory " + file.getAbsolutePath());
+        File file = Paths.get(repoLocation, "searchcode." + type + ".success").toFile();
+        if (!file.exists()) {
+            // Nothing to delete
+            return;
+        }
+        boolean success;
+        if (file.isDirectory()) {
+            // Backward compatibility if older runs created a directory instead of a file
+            try {
+                FileUtils.deleteDirectory(file);
+                success = true;
+            } catch (IOException e) {
+                success = false;
+            }
+        } else {
+            success = file.delete();
+            if (!success && file.exists()) {
+                try {
+                    FileUtils.forceDelete(file);
+                    success = true;
+                } catch (IOException ignored) {
+                }
+            }
+        }
+        if (!success && file.exists()) {
+            throw new IOException("Unable to delete marker " + file.getAbsolutePath());
         }
     }
 

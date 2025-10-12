@@ -117,6 +117,8 @@ public class SearchRouteService {
             return null;
         }
 
+        var isExact = request.queryParams().contains("exact") && request.queryParams("exact").equals("true");
+
         var query = request.queryParams("q").trim();
         var page = 0;
         page = CodeRouteService.getPage(request, page);
@@ -143,7 +145,7 @@ public class SearchRouteService {
             isLiteral = true;
         }
 
-        var searchResult = Singleton.getIndexService().search(query, facets, page, isLiteral);
+        var searchResult = Singleton.getIndexService().search(query, facets, page, isLiteral, isExact);
 
         searchResult.setCodeResultList(Singleton.getCodeMatcher().formatResults(searchResult.getCodeResultList(), query, highlight));
         searchResult.setQuery(query);

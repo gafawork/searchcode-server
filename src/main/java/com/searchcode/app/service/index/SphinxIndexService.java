@@ -274,8 +274,8 @@ public class SphinxIndexService extends IndexBaseService {
         }).orElse(null);
     }
 
-    @Override
-    public SearchResult search(String queryString, HashMap<String, String[]> facets, int page, boolean isLiteral) {
+    //@Override
+    public SearchResult search(String queryString, HashMap<String, String[]> facets, int page, boolean isLiteral, boolean isExact) {
         // NB you cannot cache SearchResult because it seems to strip out parts of the object for some reason
 
         Connection connection = null;

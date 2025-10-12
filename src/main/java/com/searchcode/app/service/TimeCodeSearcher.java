@@ -233,7 +233,8 @@ public class TimeCodeSearcher {
         TopDocs results = searcher.search(query, 20 * this.PAGELIMIT); // 20 pages worth of documents
         ScoreDoc[] hits = results.scoreDocs;
 
-        int numTotalHits = results.totalHits;
+        // TODO VERIFICAR DEPOIS PARA TORNAR LONG
+        int numTotalHits = Math.toIntExact(results.totalHits.value);
         int start = this.PAGELIMIT * page;
         int end = Math.min(numTotalHits, (this.PAGELIMIT * (page + 1)));
         int noPages = numTotalHits / this.PAGELIMIT;

@@ -40,7 +40,10 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -255,7 +258,7 @@ public class IndexService extends IndexBaseService {
         this.searchcodeLib.addToSpellingCorrector(codeIndexDocument.getContents());
         String indexContents = this.indexContentPipeline(codeIndexDocument);
 
-        document.add(new TextField(Values.REPONAME, codeIndexDocument.getRepoName().replace(" ", "_"), Field.Store.YES));
+        document.add(new StringField(Values.REPONAME, codeIndexDocument.getRepoName().replace(" ", "_"), Field.Store.YES));
         document.add(new TextField(Values.REPO_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getRepoName()).toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.FILENAME, codeIndexDocument.getFileName(), Field.Store.YES));
         document.add(new TextField(Values.FILE_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getFileName()).toLowerCase(), Field.Store.NO));
@@ -264,7 +267,7 @@ public class IndexService extends IndexBaseService {
         document.add(new TextField(Values.DISPLAY_LOCATION, codeIndexDocument.getDisplayLocation(), Field.Store.YES));
         document.add(new TextField(Values.DISPLAY_LOCATION_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getDisplayLocation()).toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.MD5HASH, codeIndexDocument.getMd5hash(), Field.Store.YES));
-        document.add(new TextField(Values.LANGUAGENAME, codeIndexDocument.getLanguageName().replace(" ", "_"), Field.Store.YES));
+        document.add(new StringField(Values.LANGUAGENAME, codeIndexDocument.getLanguageName().replace(" ", "_"), Field.Store.YES));
         document.add(new TextField(Values.LANGUAGE_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getLanguageName()).toLowerCase(), Field.Store.NO));
         document.add(new IntField(Values.LINES, codeIndexDocument.getLines(), Field.Store.YES));
         document.add(new IntField(Values.CODELINES, codeIndexDocument.getCodeLines(), Field.Store.YES));
@@ -273,15 +276,102 @@ public class IndexService extends IndexBaseService {
         document.add(new IntField(Values.COMPLEXITY, codeIndexDocument.getComplexity(), Field.Store.YES));
         document.add(new TextField(Values.CONTENTS, indexContents.toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.REPOLOCATION, codeIndexDocument.getRepoRemoteLocation(), Field.Store.YES));
-        document.add(new TextField(Values.CODEOWNER, codeIndexDocument.getCodeOwner().replace(" ", "_"), Field.Store.YES));
+        document.add(new StringField(Values.CODEOWNER, codeIndexDocument.getCodeOwner().replace(" ", "_"), Field.Store.YES));
         document.add(new TextField(Values.OWNER_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getCodeOwner()).toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.CODEID, codeIndexDocument.getHash(), Field.Store.YES));
         document.add(new TextField(Values.SCHASH, codeIndexDocument.getSchash(), Field.Store.YES));
         document.add(new TextField(Values.SOURCE, this.helpers.replaceForIndex(codeIndexDocument.getSource()), Field.Store.YES));
 
+
+        // TODO VERIFICAR MUDANÇA PARA INDEXAR ARQUIVO xml
+        // 1- PARSE DO ARQUIVO XML
+        // 2- ADICIONAR CADA TAG COMO UM CAMPO NO DOCUMENT
+
+        // VERIFICAR SE O DOCUMENTO É UM ARQUIVO XML
+        if (StringUtils.endsWithIgnoreCase(codeIndexDocument.getFileName(), ".xml")) {
+            System.out.println(">>>> indexando xml");
+            // EXEMPLO SIMPLIFICADO DE PARSE DE XML E ADIÇÃO DE TAGS AO DOCUMENTO
+            // Substitua isso por um parser XML adequado conforme necessário
+            String xmlContent = codeIndexDocument.getContents();
+
+            File file = new File(codeIndexDocument.getRepoLocationRepoNameLocationFilename());
+
+            org.w3c.dom.Document xmlDoc = null;
+            javax.xml.parsers.DocumentBuilder builder = null;
+            try {
+                builder = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder();
+
+                xmlDoc = builder.parse(file);
+                xmlDoc.getDocumentElement().normalize();
+
+            } catch (ParserConfigurationException | SAXException | IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            //Map<String, String> xmlTags = parseXmlTags(xmlContent);
+            //for (Map.Entry<String, String> entry : xmlTags.entrySet()) {
+            //    String tagName = entry.getKey();
+            //    String tagValue = entry.getValue();
+            //    System.out.println(tagName + ": " + tagValue);
+            //    document.add(new TextField(tagName, tagValue, Field.Store.YES));
+           // }
+
+            indexNodeXML(xmlDoc.getDocumentElement(), document);
+        }
+
+
+
+
+
         // Extra metadata in this case when it was last indexed
         document.add(new LongField(Values.MODIFIED, new Date().getTime(), Field.Store.YES));
         return document;
+    }
+
+    private void indexNodeXML(org.w3c.dom.Node node, Document luceneDoc) {
+        if (node.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+            String nodeName = node.getNodeName();
+
+            // Se o nó tem texto, indexa
+            String textContent = node.getTextContent().trim();
+            if (!textContent.isEmpty() && !textContent.contains("\n")) {
+                luceneDoc.add(new StringField(nodeName, textContent, TextField.Store.YES));
+            }
+
+            // Se o nó tem atributos, indexa também
+            org.w3c.dom.NamedNodeMap attrs = node.getAttributes();
+            if (attrs != null) {
+                for (int i = 0; i < attrs.getLength(); i++) {
+                    org.w3c.dom.Node attr = attrs.item(i);
+                    System.out.println(attr.getNodeName() + ": " + attr.getNodeValue());
+                    luceneDoc.add(new TextField(nodeName + "_" + attr.getNodeName(),
+                            attr.getNodeValue(), StringField.Store.YES));
+                }
+            }
+
+            // Processa filhos
+            var childNodes = node.getChildNodes();
+            for (int i = 0; i < childNodes.getLength(); i++) {
+                indexNodeXML(childNodes.item(i), luceneDoc);
+            }
+        }
+    }
+
+
+    // Exemplo simplificado de parse de XML (substitua por um parser adequado)
+    // TODO TIRSO
+    private Map<String, String> parseXmlTags(String xmlContent) {
+        Map<String, String> tags = new HashMap<>();
+        // Lógica simplificada para extrair tags (substitua por um parser XML real)
+        String[] parts = xmlContent.split("<|>");
+        for (int i = 1; i < parts.length - 1; i += 2) {
+            String tagName = parts[i].trim();
+            String tagValue = parts[i + 1].trim();
+            if (!tagName.startsWith("/")) { // Ignorar tags de fechamento
+                tags.put(tagName, tagValue);
+            }
+        }
+        return tags;
     }
 
     /**
@@ -571,7 +661,7 @@ public class IndexService extends IndexBaseService {
             var query = parser.parse(Values.REPO_NAME_LITERAL + ":" + this.helpers.replaceForIndex(repoName));
 
             var results = searcher.search(query, Integer.MAX_VALUE);
-            var end = Math.min(results.totalHits, (repoPageLimit * (page + 1)));
+            var end = Math.min(Math.toIntExact(results.totalHits.value), (repoPageLimit * (page + 1)));
             var hits = results.scoreDocs;
 
             for (var i = start; i < end; i++) {
@@ -617,7 +707,7 @@ public class IndexService extends IndexBaseService {
 
             var linesCount = new HashMap<String, Integer>();
 
-            for (int i = 0; i < results.totalHits; i++) {
+            for (int i = 0; i <  Math.toIntExact(results.totalHits.value); i++) {
                 var doc = searcher.doc(hits[i].doc);
 
                 var languageName = doc.get(Values.LANGUAGENAME).replace("_", " ");
@@ -636,7 +726,7 @@ public class IndexService extends IndexBaseService {
             }
             codeByLines.sort((a, b) -> b.getCount() - a.getCount());
 
-            totalFiles = results.totalHits;
+            totalFiles = Math.toIntExact(results.totalHits.value);
             codeFacetLanguages = this.getLanguageFacetResults(searcher, reader, query);
             repoFacetOwners = this.getOwnerFacetResults(searcher, reader, query);
         } catch (Exception ex) {
@@ -674,7 +764,7 @@ public class IndexService extends IndexBaseService {
             TopDocs results = searcher.search(query, Integer.MAX_VALUE);
             ScoreDoc[] hits = results.scoreDocs;
 
-            for (int i = 0; i < results.totalHits; i++) {
+            for (int i = 0; i < Math.toIntExact(results.totalHits.value); i++) {
                 Document doc = searcher.doc(hits[i].doc);
 
                 CodeResult codeResult = this.createCodeResult(null, Values.EMPTYSTRING, doc, hits[i].doc, hits[i].score);
@@ -702,44 +792,53 @@ public class IndexService extends IndexBaseService {
      * TODO document the extended syntax to allow raw queries
      */
     @Override
-    public SearchResult search(String queryString, HashMap<String, String[]> facets, int page, boolean isLiteral) {
+    public SearchResult search(String queryString, HashMap<String, String[]> facets, int page, boolean isLiteral, boolean isExact) {
 
+        var queryStringTemp = queryString;
         var searchResult = new SearchResult();
         this.statsService.incrementSearchCount();
         IndexReader reader = null;
 
         try {
 
+            // TODO TIRSO ( fazer alteração para buscar por tag xml
             // Required to ensure that results work the way we expect for the index
             if (!isLiteral) {
                 queryString = this.searchcodeLib.formatQueryString(queryString);
+            }
+            if (isExact) {
+                // TODO TIRSO (fazer alteração para buscar por tag xml)
+                queryString = "\"" + queryStringTemp + "\"";
             } else {
                 queryString = this.searchcodeLib.lowcase(queryString);
             }
 
+
+
+                queryString += this.buildFacets(facets);
+
+                reader = DirectoryReader.open(FSDirectory.open(this.INDEX_READ_LOCATION));
+                IndexSearcher searcher = new IndexSearcher(reader);
+
+                Analyzer analyzer = new CodeAnalyzer();
+
+                // Values.CONTENTS is the field that QueryParser will search if you don't
+                // prefix it with a field EG. fileName:something* or other raw lucene search
+                QueryParser parser = new QueryParser(Values.CONTENTS, analyzer);
+                Query query = parser.parse(queryString);
+
+                this.logger.info("14d57e05::searching for: " + query.toString(Values.CONTENTS));
+                this.logger.searchLog("a8895274::query " + query.toString(Values.CONTENTS) + " page " + page);
+
+                searchResult = this.doPagingSearch(reader, searcher, query, page);
+            } catch(Exception ex){
+                this.logger.severe(String.format("bc93074f::error in class %s exception %s", ex.getClass(), ex.getMessage()));
+            } finally{
+                this.helpers.closeQuietly(reader);
+            }
+
             queryString += this.buildFacets(facets);
 
-            reader = DirectoryReader.open(FSDirectory.open(this.INDEX_READ_LOCATION));
-            IndexSearcher searcher = new IndexSearcher(reader);
-
-            Analyzer analyzer = new CodeAnalyzer();
-
-            // Values.CONTENTS is the field that QueryParser will search if you don't
-            // prefix it with a field EG. fileName:something* or other raw lucene search
-            QueryParser parser = new QueryParser(Values.CONTENTS, analyzer);
-            Query query = parser.parse(queryString);
-
-            this.logger.info("14d57e05::searching for: " + query.toString(Values.CONTENTS));
-            this.logger.searchLog("a8895274::query " + query.toString(Values.CONTENTS) + " page " + page);
-
-            searchResult = this.doPagingSearch(reader, searcher, query, page);
-        } catch (Exception ex) {
-            this.logger.severe(String.format("bc93074f::error in class %s exception %s", ex.getClass(), ex.getMessage()));
-        } finally {
-            this.helpers.closeQuietly(reader);
-        }
-
-        queryString += this.buildFacets(facets);
 
 
         return searchResult;
@@ -852,7 +951,7 @@ public class IndexService extends IndexBaseService {
         TopDocs results = searcher.search(query, this.NO_PAGES_LIMIT * this.PAGE_LIMIT); // 20 pages worth of documents
         ScoreDoc[] hits = results.scoreDocs;
 
-        int numTotalHits = results.totalHits;
+        int numTotalHits = Math.toIntExact(results.totalHits.value);
         int start = this.PAGE_LIMIT * page;
         int end = Math.min(numTotalHits, (this.PAGE_LIMIT * (page + 1)));
         int noPages = numTotalHits / this.PAGE_LIMIT;

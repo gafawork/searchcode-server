@@ -56,3 +56,12 @@ index_all_fields=content,filename,filenamereverse,path,interesting
 # The below will probably be moved into the settings page at some point in the future
 password=Adm1n234
 encryption_key=39dc5f2168e412be3a9faf9d08482114
+
+# Analyzer / Snowball configuration
+# Enable or disable Snowball stemming (true/false)
+# analyzer_snowball_enabled=true
+# Fully qualified class name of the Snowball stemmer to use.
+# Defaults to org.tartarus.snowball.ext.PortugueseStemmer, examples:
+# org.tartarus.snowball.ext.EnglishStemmer
+# org.tartarus.snowball.ext.SpanishStemmer
+# analyzer_snowball_stemmer_class=org.tartarus.snowball.ext.PortugueseStemmer
