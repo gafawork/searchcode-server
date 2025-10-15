@@ -171,7 +171,8 @@ public class IndexServiceTest extends TestCase {
         queue.add(this.codeIndexDocument);
         this.indexService.indexDocument(queue);
 
-        SearchResult contents = this.indexService.search(this.contents, null, 0, false);
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult contents = this.indexService.search(this.contents, null, 0, false, false);
         assertThat(contents.getTotalHits()).isNotZero();
         assertThat(contents.getLanguageFacetResults().size()).isNotZero();
         assertThat(contents.getRepoFacetResults().size()).isNotZero();
@@ -189,7 +190,8 @@ public class IndexServiceTest extends TestCase {
         queue.add(this.codeIndexDocument);
         this.indexService.indexDocument(queue);
 
-        SearchResult contents = this.indexService.search(this.contents + " AND rn:" + this.repoName + " AND fn:fileName*", null, 0, true);
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult contents = this.indexService.search(this.contents + " AND rn:" + this.repoName + " AND fn:fileName*", null, 0, true, false);
         assertThat(contents.getTotalHits()).isNotZero();
         assertThat(contents.getLanguageFacetResults().size()).isNotZero();
         assertThat(contents.getRepoFacetResults().size()).isNotZero();
@@ -210,7 +212,9 @@ public class IndexServiceTest extends TestCase {
         this.indexService.indexDocument(queue);
 
         var helpers = new Helpers();
-        var contents = this.indexService.search("rn:" + helpers.replaceForIndex(this.repoName), null, 0, true);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        var contents = this.indexService.search("rn:" + helpers.replaceForIndex(this.repoName), null, 0, true, false);
 
         assertThat(contents.getTotalHits()).isNotZero();
         assertThat(contents.getLanguageFacetResults().size()).isNotZero();
@@ -245,7 +249,9 @@ public class IndexServiceTest extends TestCase {
         this.indexService.indexDocument(queue);
 
         // Check on first index
-        SearchResult contents = this.indexService.search(this.contents, null, 0, false);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult contents = this.indexService.search(this.contents, null, 0, false, false);
         assertThat(contents.getTotalHits()).isNotZero();
         String read = data.getDataByName(Values.INDEX_READ, Values.INDEX_A);
         String write = data.getDataByName(Values.INDEX_WRITE, Values.INDEX_A);
@@ -256,17 +262,23 @@ public class IndexServiceTest extends TestCase {
         assertThat(data.getDataByName(Values.INDEX_WRITE)).isNotEqualTo(write);
         queue.add(this.codeIndexDocument);
         this.indexService.indexDocument(queue);
-        contents = this.indexService.search(this.contents, null, 0, false);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        contents = this.indexService.search(this.contents, null, 0, false, false);
         assertThat(contents.getTotalHits()).isNotZero();
         this.indexService.deleteByCodeId(this.codeId);
-        contents = this.indexService.search(this.contents, null, 0, false);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        contents = this.indexService.search(this.contents, null, 0, false, false);
         assertThat(contents.getTotalHits()).isZero();
 
         // Flip and check on first index
         this.indexService.flipIndex();
         assertThat(data.getDataByName(Values.INDEX_READ)).isEqualTo(read);
         assertThat(data.getDataByName(Values.INDEX_WRITE)).isEqualTo(write);
-        contents = this.indexService.search(this.contents, null, 0, false);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        contents = this.indexService.search(this.contents, null, 0, false, false);
         assertThat(contents.getTotalHits()).isNotZero();
 
         this.indexService.deleteByCodeId(this.codeId);
@@ -541,7 +553,8 @@ public class IndexServiceTest extends TestCase {
                 .setSource("source"));
         this.indexService.indexDocument(queue);
 
-        SearchResult search = this.indexService.search("actual.contains", null, 0, false);
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult search = this.indexService.search("actual.contains", null, 0, false, false);
         assertThat(search.getTotalHits()).isGreaterThanOrEqualTo(1);
     }
 
@@ -565,7 +578,8 @@ public class IndexServiceTest extends TestCase {
                 .setSource("source"));
         this.indexService.indexDocument(queue);
 
-        SearchResult search = this.indexService.search("emaN*", null, 0, false);
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult search = this.indexService.search("emaN*", null, 0, false, false);
         assertThat(search.getTotalHits()).isGreaterThanOrEqualTo(1);
     }
 
@@ -589,11 +603,16 @@ public class IndexServiceTest extends TestCase {
                 .setSource("source"));
         this.indexService.indexDocument(queue);
 
-        var search = this.indexService.search("PhysicsServer::get_singleton", null, 0, false);
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        var search = this.indexService.search("PhysicsServer::get_singleton", null, 0, false, false);
         assertThat(search.getTotalHits()).isGreaterThanOrEqualTo(1);
-        search = this.indexService.search("std::cout", null, 0, false);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        search = this.indexService.search("std::cout", null, 0, false, false);
         assertThat(search.getTotalHits()).isGreaterThanOrEqualTo(1);
-        search = this.indexService.search("std::string", null, 0, false);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        search = this.indexService.search("std::string", null, 0, false, false);
         assertThat(search.getTotalHits()).isGreaterThanOrEqualTo(1);
     }
 
@@ -696,7 +715,9 @@ public class IndexServiceTest extends TestCase {
             }
         });
         methodList.add(arg -> this.indexService.reindexAll());
-        methodList.add(arg -> this.indexService.search(RandomStringUtils.randomAscii(rand.nextInt(20) + 1), null, rand.nextInt(40), false));
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        methodList.add(arg -> this.indexService.search(RandomStringUtils.randomAscii(rand.nextInt(20) + 1), null, rand.nextInt(40), false, false));
         methodList.add(arg -> this.indexService.shouldPause(IIndexService.JobType.REPO_ADDER));
         methodList.add(arg -> this.indexService.shouldPause(IIndexService.JobType.REPO_PARSER));
         methodList.add(arg -> this.indexService.shouldExit(IIndexService.JobType.REPO_ADDER));

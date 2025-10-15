@@ -26,10 +26,12 @@ public class SphinxIndexServiceTest extends TestCase {
         for (int i = 0; i < 100; i++) {
             someList.add("" + i);
         }
-        var res = sphinxIndexService.search("test", null, 0, false);
+
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
+        var res = sphinxIndexService.search("test", null, 0, false, false);
 
         someList.parallelStream()
-                .forEach(x -> sphinxIndexService.search("test", null, 0, false));
+                .forEach(x -> sphinxIndexService.search("test", null, 0, false, false));
     }
 
     public void testSearchEnsureConnectionsClose() {
@@ -37,8 +39,9 @@ public class SphinxIndexServiceTest extends TestCase {
 
         var sphinxIndexService = new SphinxIndexService();
 
+        // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
         for (int i = 0; i < 100; i++) {
-            sphinxIndexService.search("test", null, 0, false);
+            sphinxIndexService.search("test", null, 0, false, false);
         }
     }
 

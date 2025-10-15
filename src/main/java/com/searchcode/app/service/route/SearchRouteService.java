@@ -145,6 +145,7 @@ public class SearchRouteService {
             isLiteral = true;
         }
 
+
         var searchResult = Singleton.getIndexService().search(query, facets, page, isLiteral, isExact);
 
         searchResult.setCodeResultList(Singleton.getCodeMatcher().formatResults(searchResult.getCodeResultList(), query, highlight));

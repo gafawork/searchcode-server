@@ -40,7 +40,9 @@ public class EndToEndITCase extends TestCase {
                         .setBranch("branch")
                         .setData("{}"),
                 "", directoryWithFiles.toString(), false);
-        SearchResult searchResult = indexService.search("endtoendtestfile", null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult searchResult = indexService.search("endtoendtestfile", null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(3);
 
         CodeResult codeResult1 = searchResult.getCodeResultList().stream().filter(x -> x.getFileName().equals("EndToEndTestFile1.php")).findFirst().get();
@@ -53,7 +55,9 @@ public class EndToEndITCase extends TestCase {
         // Delete a single file
         String codeId = searchResult.getCodeResultList().get(0).getCodeId();
         indexService.deleteByCodeId(codeId);
-        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(2);
 
         codeResult1 = searchResult.getCodeResultList().stream().filter(x -> x.getFileName().equals("EndToEndTestFile2.py")).findFirst().get();
@@ -74,7 +78,9 @@ public class EndToEndITCase extends TestCase {
                 .setSource("source")
                 .setBranch("branch")
                 .setData("{}"), "", directoryWithFiles.toString(), true);
-        searchResult = indexService.search("endtoendtestfile", null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile", null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(2);
 
         codeResult1 = searchResult.getCodeResultList().stream().filter(x -> x.getFileName().equals("EndToEndTestFile1.php")).findFirst().get();
@@ -93,7 +99,9 @@ public class EndToEndITCase extends TestCase {
                 .setSource("source")
                 .setBranch("branch")
                 .setData("{}"));
-        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(0);
     }
 
@@ -117,7 +125,8 @@ public class EndToEndITCase extends TestCase {
                 .setBranch("branch")
                 .setData("{}"), "", directoryWithFiles.toString(), false);
 
-        SearchResult searchResult = indexService.search("endtoendtestfile", null, 0, false);
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult searchResult = indexService.search("endtoendtestfile", null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(3);
 
         CodeResult codeResult1 = searchResult.getCodeResultList().stream().filter(x -> x.getFileName().equals("EndToEndTestFile1.php")).findFirst().get();
@@ -130,7 +139,9 @@ public class EndToEndITCase extends TestCase {
         // Delete a single file
         String codeId = searchResult.getCodeResultList().get(0).getCodeId();
         indexService.deleteByCodeId(codeId);
-        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(2);
 
         // Delete file from disk then index to ensure it is removed from the index
@@ -146,7 +157,9 @@ public class EndToEndITCase extends TestCase {
                 .setSource("source")
                 .setBranch("branch")
                 .setData("{}"), "", directoryWithFiles.toString(), true);
-        searchResult = indexService.search("endtoendtestfile", null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile", null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(2);
 
         codeResult1 = searchResult.getCodeResultList().stream().filter(x -> x.getFileName().equals("EndToEndTestFile1.php")).findFirst().get();
@@ -164,7 +177,9 @@ public class EndToEndITCase extends TestCase {
                 .setSource("source")
                 .setBranch("branch")
                 .setData("{}"));
-        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false);
+
+        // todo CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false, false  );
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(0);
     }
 
@@ -184,7 +199,9 @@ public class EndToEndITCase extends TestCase {
                 .setBranch("branch")
                 .setData("{}"), "", directoryWithFiles.toString(), false);
 
-        SearchResult searchResult = indexService.search("endtoendtestfile", null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        SearchResult searchResult = indexService.search("endtoendtestfile", null, 0, false,false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(3);
 
         CodeResult codeResult1 = searchResult.getCodeResultList().stream().filter(x -> x.getFileName().equals("EndToEndTestFile1.php")).findFirst().get();
@@ -197,7 +214,9 @@ public class EndToEndITCase extends TestCase {
         // Delete a single file
         String codeId = searchResult.getCodeResultList().get(0).getCodeId();
         indexService.deleteByCodeId(codeId);
-        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(2);
 
         // Delete file from disk then index to ensure it is removed from the index
@@ -213,7 +232,9 @@ public class EndToEndITCase extends TestCase {
                 .setSource("source")
                 .setBranch("branch")
                 .setData("{}"), "", directoryWithFiles.toString(), true);
-        searchResult = indexService.search("endtoendtestfile", null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile", null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(2);
 
         codeResult1 = searchResult.getCodeResultList().stream().filter(x -> x.getFileName().equals("EndToEndTestFile1.php")).findFirst().get();
@@ -231,7 +252,9 @@ public class EndToEndITCase extends TestCase {
                 .setSource("source")
                 .setBranch("branch")
                 .setData("{}"));
-        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false);
+
+        // TODO CHECK INSERT PARAMETER ISEXACT EQUALS FALSE
+        searchResult = indexService.search("endtoendtestfile".toLowerCase(), null, 0, false, false);
         assertThat(searchResult.getCodeResultList().size()).isEqualTo(0);
     }
 
