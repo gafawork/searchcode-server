@@ -288,36 +288,36 @@ public class IndexService extends IndexBaseService {
         // 2- ADICIONAR CADA TAG COMO UM CAMPO NO DOCUMENT
 
         // VERIFICAR SE O DOCUMENTO É UM ARQUIVO XML
-        if (StringUtils.endsWithIgnoreCase(codeIndexDocument.getFileName(), ".xml")) {
-            System.out.println(">>>> indexando xml");
-            // EXEMPLO SIMPLIFICADO DE PARSE DE XML E ADIÇÃO DE TAGS AO DOCUMENTO
-            // Substitua isso por um parser XML adequado conforme necessário
-            String xmlContent = codeIndexDocument.getContents();
-
-            File file = new File(codeIndexDocument.getRepoLocationRepoNameLocationFilename());
-
-            org.w3c.dom.Document xmlDoc = null;
-            javax.xml.parsers.DocumentBuilder builder = null;
-            try {
-                builder = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder();
-
-                xmlDoc = builder.parse(file);
-                xmlDoc.getDocumentElement().normalize();
-
-            } catch (ParserConfigurationException | SAXException | IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            //Map<String, String> xmlTags = parseXmlTags(xmlContent);
-            //for (Map.Entry<String, String> entry : xmlTags.entrySet()) {
-            //    String tagName = entry.getKey();
-            //    String tagValue = entry.getValue();
-            //    System.out.println(tagName + ": " + tagValue);
-            //    document.add(new TextField(tagName, tagValue, Field.Store.YES));
-           // }
-
-            indexNodeXML(xmlDoc.getDocumentElement(), document);
-        }
+//        if (StringUtils.endsWithIgnoreCase(codeIndexDocument.getFileName(), ".xml")) {
+//            System.out.println(">>>> indexando xml");
+//            // EXEMPLO SIMPLIFICADO DE PARSE DE XML E ADIÇÃO DE TAGS AO DOCUMENTO
+//            // Substitua isso por um parser XML adequado conforme necessário
+//            String xmlContent = codeIndexDocument.getContents();
+//
+//            File file = new File(codeIndexDocument.getRepoLocationRepoNameLocationFilename());
+//
+//            org.w3c.dom.Document xmlDoc = null;
+//            javax.xml.parsers.DocumentBuilder builder = null;
+//            try {
+//                builder = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder();
+//
+//                xmlDoc = builder.parse(file);
+//                xmlDoc.getDocumentElement().normalize();
+//
+//            } catch (ParserConfigurationException | SAXException | IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            //Map<String, String> xmlTags = parseXmlTags(xmlContent);
+//            //for (Map.Entry<String, String> entry : xmlTags.entrySet()) {
+//            //    String tagName = entry.getKey();
+//            //    String tagValue = entry.getValue();
+//            //    System.out.println(tagName + ": " + tagValue);
+//            //    document.add(new TextField(tagName, tagValue, Field.Store.YES));
+//           // }
+//
+//            indexNodeXML(xmlDoc.getDocumentElement(), document);
+//        }
 
 
 
