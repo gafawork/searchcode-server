@@ -126,19 +126,6 @@ public class IndexGitRepoJob extends IndexBaseRepoJob {
     public List<CodeOwner> getBlameInfoExternal(int codeLinesSize, String repoName, String repoLocations, String fileName) {
         List<CodeOwner> codeOwners = new ArrayList<>(codeLinesSize);
 
-        // Safety: if running under tests or system git path is missing/inaccessible, fall back to internal JGit
-        try {
-            String surefireProp = System.getProperty("surefire.test.class.path");
-            File gitPath = new File(this.GIT_BINARY_PATH);
-            if (surefireProp != null || !gitPath.exists() || !gitPath.canExecute()) {
-                this.logger.info("e3b7c4a1::skipping external git blame (tests or git not executable), falling back to internal implementation");
-                return this.getBlameInfo(codeLinesSize, repoName, repoLocations, fileName);
-            }
-        } catch (SecurityException ignored) {
-            this.logger.info("b6c9f2d0::security manager blocked access to git, using internal blame");
-            return this.getBlameInfo(codeLinesSize, repoName, repoLocations, fileName);
-        }
-
         // -w is to ignore whitespace bug
         ProcessBuilder processBuilder = new ProcessBuilder(this.GIT_BINARY_PATH, "blame", "-c", "-w", fileName);
         // The / part is required due to centos bug for version 1.1.1
@@ -203,9 +190,7 @@ public class IndexGitRepoJob extends IndexBaseRepoJob {
             }
 
         } catch (IOException | StringIndexOutOfBoundsException ex) {
-            // Handle AccessDenied (Windows error=5) and other IO errors by falling back to internal blame
             this.logger.severe(String.format("1cf371a5::error in class %s exception %s for repository %s", ex.getClass(), ex.getMessage(), repoName));
-            return this.getBlameInfo(codeLinesSize, repoName, repoLocations, fileName);
         } finally {
             Singleton.getHelpers().closeQuietly(process);
             Singleton.getHelpers().closeQuietly(bufferedReader);

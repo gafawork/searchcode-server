@@ -23,6 +23,7 @@ import com.searchcode.app.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.br.BrazilianAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.facet.*;
 import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
@@ -40,10 +41,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -242,23 +240,37 @@ public class IndexService extends IndexBaseService {
         Field pathField = new StringField(Values.PATH, codeIndexDocument.getRepoLocationRepoNameLocationFilename(), Field.Store.YES);
         document.add(pathField);
 
-        if (!this.helpers.isNullEmptyOrWhitespace(codeIndexDocument.getLanguageName())) {
-            document.add(new SortedSetDocValuesFacetField(Values.LANGUAGENAME, codeIndexDocument.getLanguageName()));
-        }
-        if (!this.helpers.isNullEmptyOrWhitespace(codeIndexDocument.getRepoName())) {
-            document.add(new SortedSetDocValuesFacetField(Values.REPONAME, codeIndexDocument.getRepoName()));
-        }
-        if (!this.helpers.isNullEmptyOrWhitespace(codeIndexDocument.getCodeOwner())) {
-            document.add(new SortedSetDocValuesFacetField(Values.CODEOWNER, codeIndexDocument.getCodeOwner()));
-        }
-        if (!this.helpers.isNullEmptyOrWhitespace(codeIndexDocument.getSource())) {
-            document.add(new SortedSetDocValuesFacetField(Values.SOURCE, codeIndexDocument.getSource()));
+        var languageName = codeIndexDocument.getLanguageName() == null ? Values.EMPTYSTRING : codeIndexDocument.getLanguageName();
+        var repoName = codeIndexDocument.getRepoName() == null ? Values.EMPTYSTRING : codeIndexDocument.getRepoName();
+        var codeOwner = codeIndexDocument.getCodeOwner() == null ? Values.EMPTYSTRING : codeIndexDocument.getCodeOwner();
+        var source = codeIndexDocument.getSource() == null ? Values.EMPTYSTRING : codeIndexDocument.getSource();
+
+        // Keep stored metadata for reads/tests and facet doc-values for aggregations.
+        document.add(new StoredField(Values.LANGUAGENAME, languageName.replace(" ", "_")));
+        if (!this.helpers.isNullEmptyOrWhitespace(languageName)) {
+            document.add(new SortedSetDocValuesFacetField(Values.LANGUAGENAME, languageName));
         }
 
+        document.add(new StoredField(Values.REPONAME, repoName.replace(" ", "_")));
+        if (!this.helpers.isNullEmptyOrWhitespace(repoName)) {
+            document.add(new SortedSetDocValuesFacetField(Values.REPONAME, repoName));
+        }
+
+        document.add(new StoredField(Values.CODEOWNER, codeOwner.replace(" ", "_")));
+        if (!this.helpers.isNullEmptyOrWhitespace(codeOwner)) {
+            document.add(new SortedSetDocValuesFacetField(Values.CODEOWNER, codeOwner));
+        }
+
+        document.add(new StoredField(Values.SOURCE, this.helpers.replaceForIndex(source)));
+        if (!this.helpers.isNullEmptyOrWhitespace(source)) {
+            document.add(new SortedSetDocValuesFacetField(Values.SOURCE, source));
+        }
+
+        // TODO TIRSO verificar
         this.searchcodeLib.addToSpellingCorrector(codeIndexDocument.getContents());
+        //this.searchcodeLib.addToSpellingCorrector(StringEscapeUtils.escapeXml11(codeIndexDocument.getContents()));
         String indexContents = this.indexContentPipeline(codeIndexDocument);
 
-        document.add(new StringField(Values.REPONAME, codeIndexDocument.getRepoName().replace(" ", "_"), Field.Store.YES));
         document.add(new TextField(Values.REPO_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getRepoName()).toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.FILENAME, codeIndexDocument.getFileName(), Field.Store.YES));
         document.add(new TextField(Values.FILE_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getFileName()).toLowerCase(), Field.Store.NO));
@@ -267,20 +279,23 @@ public class IndexService extends IndexBaseService {
         document.add(new TextField(Values.DISPLAY_LOCATION, codeIndexDocument.getDisplayLocation(), Field.Store.YES));
         document.add(new TextField(Values.DISPLAY_LOCATION_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getDisplayLocation()).toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.MD5HASH, codeIndexDocument.getMd5hash(), Field.Store.YES));
-        document.add(new StringField(Values.LANGUAGENAME, codeIndexDocument.getLanguageName().replace(" ", "_"), Field.Store.YES));
+
         document.add(new TextField(Values.LANGUAGE_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getLanguageName()).toLowerCase(), Field.Store.NO));
-        document.add(new IntField(Values.LINES, codeIndexDocument.getLines(), Field.Store.YES));
-        document.add(new IntField(Values.CODELINES, codeIndexDocument.getCodeLines(), Field.Store.YES));
-        document.add(new IntField(Values.BLANKLINES, codeIndexDocument.getBlankLines(), Field.Store.YES));
-        document.add(new IntField(Values.COMMENTLINES, codeIndexDocument.getCommentLines(), Field.Store.YES));
-        document.add(new IntField(Values.COMPLEXITY, codeIndexDocument.getComplexity(), Field.Store.YES));
+        document.add(new StoredField(Values.LINES, codeIndexDocument.getLines()));
+        document.add(new StoredField(Values.CODELINES, codeIndexDocument.getCodeLines()));
+        document.add(new StoredField(Values.BLANKLINES, codeIndexDocument.getBlankLines()));
+        document.add(new StoredField(Values.COMMENTLINES, codeIndexDocument.getCommentLines()));
+        document.add(new StoredField(Values.COMPLEXITY, codeIndexDocument.getComplexity()));
         document.add(new TextField(Values.CONTENTS, indexContents.toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.REPOLOCATION, codeIndexDocument.getRepoRemoteLocation(), Field.Store.YES));
-        document.add(new StringField(Values.CODEOWNER, codeIndexDocument.getCodeOwner().replace(" ", "_"), Field.Store.YES));
+
         document.add(new TextField(Values.OWNER_NAME_LITERAL, this.helpers.replaceForIndex(codeIndexDocument.getCodeOwner()).toLowerCase(), Field.Store.NO));
         document.add(new TextField(Values.CODEID, codeIndexDocument.getHash(), Field.Store.YES));
         document.add(new TextField(Values.SCHASH, codeIndexDocument.getSchash(), Field.Store.YES));
-        document.add(new TextField(Values.SOURCE, this.helpers.replaceForIndex(codeIndexDocument.getSource()), Field.Store.YES));
+
+
+        // Extra metadata in this case when it was last indexed
+        document.add(new StoredField(Values.MODIFIED, new Date().getTime()));
 
 
         // TODO VERIFICAR MUDANÇA PARA INDEXAR ARQUIVO xml
@@ -319,12 +334,15 @@ public class IndexService extends IndexBaseService {
 //            indexNodeXML(xmlDoc.getDocumentElement(), document);
 //        }
 
+        if (StringUtils.endsWithIgnoreCase(codeIndexDocument.getFileName(), ".xml")) {
+            System.out.println(">>>> indexando xml");
 
 
 
+        }
 
-        // Extra metadata in this case when it was last indexed
-        document.add(new LongField(Values.MODIFIED, new Date().getTime(), Field.Store.YES));
+
+
         return document;
     }
 
@@ -414,7 +432,7 @@ public class IndexService extends IndexBaseService {
             return;
         }
 
-        Directory dir = FSDirectory.open(this.INDEX_READ_LOCATION);
+        Directory dir = FSDirectory.open(this.INDEX_WRITE_LOCATION);
 
         Analyzer analyzer = new CodeAnalyzer();
         IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
@@ -422,9 +440,10 @@ public class IndexService extends IndexBaseService {
 
         IndexWriter writer = new IndexWriter(dir, iwc);
 
-        writer.deleteDocuments(new Term(Values.REPONAME, repo.getName()));
+        writer.deleteDocuments(new Term(Values.REPO_NAME_LITERAL, this.helpers.replaceForIndex(repo.getName())));
         this.helpers.closeQuietly(writer);
     }
+
 
     @Override
     public synchronized void deleteAll() throws IOException {
@@ -608,8 +627,14 @@ public class IndexService extends IndexBaseService {
 
         try {
             reader = DirectoryReader.open(FSDirectory.open(this.INDEX_READ_LOCATION));
+
+            // TODO VERIFICAR
             IndexSearcher searcher = new IndexSearcher(reader);
-            Analyzer analyzer = new CodeAnalyzer();
+
+
+            BrazilianAnalyzer analyzer = new BrazilianAnalyzer();
+
+            //Analyzer analyzer = new CodeAnalyzer();
             QueryParser parser = new QueryParser(Values.CONTENTS, analyzer);
 
             Query query = parser.parse(Values.CODEID + ":" + QueryParser.escape(codeId));
@@ -661,7 +686,7 @@ public class IndexService extends IndexBaseService {
             var query = parser.parse(Values.REPO_NAME_LITERAL + ":" + this.helpers.replaceForIndex(repoName));
 
             var results = searcher.search(query, Integer.MAX_VALUE);
-            var end = Math.min(Math.toIntExact(results.totalHits.value), (repoPageLimit * (page + 1)));
+            var end = Math.min(results.totalHits.value, (repoPageLimit * (page + 1)));
             var hits = results.scoreDocs;
 
             for (var i = start; i < end; i++) {
@@ -686,8 +711,8 @@ public class IndexService extends IndexBaseService {
             return new ProjectStats(0, 0, new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
         }
 
-        var totalCodeLines = 0;
-        var totalFiles = 0;
+        var totalCodeLines = 0L;
+        var totalFiles = 0L;
         List<CodeFacetLanguage> codeFacetLanguages = new ArrayList<>();
         List<CodeFacetOwner> repoFacetOwners = new ArrayList<>();
         List<CodeFacetLanguage> codeByLines = new ArrayList<>();
@@ -707,7 +732,7 @@ public class IndexService extends IndexBaseService {
 
             var linesCount = new HashMap<String, Integer>();
 
-            for (int i = 0; i <  Math.toIntExact(results.totalHits.value); i++) {
+            for (int i = 0; i < results.totalHits.value; i++) {
                 var doc = searcher.doc(hits[i].doc);
 
                 var languageName = doc.get(Values.LANGUAGENAME).replace("_", " ");
@@ -726,7 +751,7 @@ public class IndexService extends IndexBaseService {
             }
             codeByLines.sort((a, b) -> b.getCount() - a.getCount());
 
-            totalFiles = Math.toIntExact(results.totalHits.value);
+            totalFiles = results.totalHits.value;
             codeFacetLanguages = this.getLanguageFacetResults(searcher, reader, query);
             repoFacetOwners = this.getOwnerFacetResults(searcher, reader, query);
         } catch (Exception ex) {
@@ -764,7 +789,7 @@ public class IndexService extends IndexBaseService {
             TopDocs results = searcher.search(query, Integer.MAX_VALUE);
             ScoreDoc[] hits = results.scoreDocs;
 
-            for (int i = 0; i < Math.toIntExact(results.totalHits.value); i++) {
+            for (int i = 0; i < results.totalHits.value; i++) {
                 Document doc = searcher.doc(hits[i].doc);
 
                 CodeResult codeResult = this.createCodeResult(null, Values.EMPTYSTRING, doc, hits[i].doc, hits[i].score);
@@ -791,58 +816,111 @@ public class IndexService extends IndexBaseService {
      * TODO consider escaping if not a lucene query QueryParserBase.escape(queryString)
      * TODO document the extended syntax to allow raw queries
      */
+//    @Override
+//    public SearchResult search(String queryString, HashMap<String, String[]> facets, int page, boolean isLiteral, boolean isExact) {
+//
+//        var queryStringTemp = queryString;
+//        var searchResult = new SearchResult();
+//        this.statsService.incrementSearchCount();
+//        IndexReader reader = null;
+//
+//        try {
+//
+//            // TODO TIRSO ( fazer alteração para buscar por tag xml
+//            // Required to ensure that results work the way we expect for the index
+//            if (!isLiteral) {
+//                queryString = this.searchcodeLib.formatQueryString(queryString);
+//            }
+//            if (isExact) {
+//                // TODO TIRSO (fazer alteração para buscar por tag xml)
+//                queryString = "\"" + queryStringTemp + "\"";
+//            } else {
+//                queryString = this.searchcodeLib.lowcase(queryString);
+//            }
+//
+//
+//
+//                queryString += this.buildFacets(facets);
+//
+//                reader = DirectoryReader.open(FSDirectory.open(this.INDEX_READ_LOCATION));
+//                IndexSearcher searcher = new IndexSearcher(reader);
+//
+//                Analyzer analyzer = new CodeAnalyzer();
+//
+//                // Values.CONTENTS is the field that QueryParser will search if you don't
+//                // prefix it with a field EG. fileName:something* or other raw lucene search
+//                QueryParser parser = new QueryParser(Values.CONTENTS, analyzer);
+//                Query query = parser.parse(queryString);
+//
+//                this.logger.info("14d57e05::searching for: " + query.toString(Values.CONTENTS));
+//                this.logger.searchLog("a8895274::query " + query.toString(Values.CONTENTS) + " page " + page);
+//
+//                searchResult = this.doPagingSearch(reader, searcher, query, page);
+//            } catch(Exception ex){
+//                this.logger.severe(String.format("bc93074f::error in class %s exception %s", ex.getClass(), ex.getMessage()));
+//            } finally{
+//                this.helpers.closeQuietly(reader);
+//            }
+//
+//            queryString += this.buildFacets(facets);
+//
+//
+//
+//        return searchResult;
+//    }
+
+    // TODO tirso metodo acima foi feito para busca do xml
+    /**
+     * Given a query and what page of results we are on return the matching results for that search.
+     * Does not escape the query so it allows syntax such as fileName:some*
+     * TODO consider escaping if not a lucene query QueryParserBase.escape(queryString)
+     * TODO document the extended syntax to allow raw queries
+     */
     @Override
     public SearchResult search(String queryString, HashMap<String, String[]> facets, int page, boolean isLiteral, boolean isExact) {
 
-        var queryStringTemp = queryString;
         var searchResult = new SearchResult();
         this.statsService.incrementSearchCount();
         IndexReader reader = null;
 
         try {
 
-            // TODO TIRSO ( fazer alteração para buscar por tag xml
             // Required to ensure that results work the way we expect for the index
             if (!isLiteral) {
                 queryString = this.searchcodeLib.formatQueryString(queryString);
-            }
-            if (isExact) {
-                // TODO TIRSO (fazer alteração para buscar por tag xml)
-                queryString = "\"" + queryStringTemp + "\"";
             } else {
                 queryString = this.searchcodeLib.lowcase(queryString);
             }
 
-
-
-                queryString += this.buildFacets(facets);
-
-                reader = DirectoryReader.open(FSDirectory.open(this.INDEX_READ_LOCATION));
-                IndexSearcher searcher = new IndexSearcher(reader);
-
-                Analyzer analyzer = new CodeAnalyzer();
-
-                // Values.CONTENTS is the field that QueryParser will search if you don't
-                // prefix it with a field EG. fileName:something* or other raw lucene search
-                QueryParser parser = new QueryParser(Values.CONTENTS, analyzer);
-                Query query = parser.parse(queryString);
-
-                this.logger.info("14d57e05::searching for: " + query.toString(Values.CONTENTS));
-                this.logger.searchLog("a8895274::query " + query.toString(Values.CONTENTS) + " page " + page);
-
-                searchResult = this.doPagingSearch(reader, searcher, query, page);
-            } catch(Exception ex){
-                this.logger.severe(String.format("bc93074f::error in class %s exception %s", ex.getClass(), ex.getMessage()));
-            } finally{
-                this.helpers.closeQuietly(reader);
-            }
-
             queryString += this.buildFacets(facets);
 
+            reader = DirectoryReader.open(FSDirectory.open(this.INDEX_READ_LOCATION));
+            IndexSearcher searcher = new IndexSearcher(reader);
+
+            Analyzer analyzer = new CodeAnalyzer();
+
+            // Values.CONTENTS is the field that QueryParser will search if you don't
+            // prefix it with a field EG. fileName:something* or other raw lucene search
+            QueryParser parser = new QueryParser(Values.CONTENTS, analyzer);
+            Query query = parser.parse(queryString);
+
+            this.logger.info("14d57e05::searching for: " + query.toString(Values.CONTENTS));
+            this.logger.searchLog("a8895274::query " + query.toString(Values.CONTENTS) + " page " + page);
+
+            searchResult = this.doPagingSearch(reader, searcher, query, page);
+        } catch (Exception ex) {
+            this.logger.severe(String.format("bc93074f::error in class %s exception %s", ex.getClass(), ex.getMessage()));
+        } finally {
+            this.helpers.closeQuietly(reader);
+        }
+
+        queryString += this.buildFacets(facets);
 
 
         return searchResult;
     }
+
+
 
     public String buildFacets(HashMap<String, String[]> facets) {
         if (facets == null) {
@@ -951,10 +1029,10 @@ public class IndexService extends IndexBaseService {
         TopDocs results = searcher.search(query, this.NO_PAGES_LIMIT * this.PAGE_LIMIT); // 20 pages worth of documents
         ScoreDoc[] hits = results.scoreDocs;
 
-        int numTotalHits = Math.toIntExact(results.totalHits.value);
+        long numTotalHits = results.totalHits.value;
         int start = this.PAGE_LIMIT * page;
-        int end = Math.min(numTotalHits, (this.PAGE_LIMIT * (page + 1)));
-        int noPages = numTotalHits / this.PAGE_LIMIT;
+        long end = Math.min(numTotalHits, (this.PAGE_LIMIT * (page + 1)));
+        long noPages = numTotalHits / this.PAGE_LIMIT;
 
         if (noPages > this.NO_PAGES_LIMIT) {
             noPages = this.NO_PAGES_LIMIT - 1;

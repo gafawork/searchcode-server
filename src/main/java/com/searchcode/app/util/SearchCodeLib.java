@@ -69,6 +69,7 @@ public class SearchCodeLib {
 
         StringBuilder indexContents = new StringBuilder();
 
+        // todo verificar
         contents = contents.replaceAll("[^a-zA-Z0-9]", " ");
 
         // Performance improvement hack
@@ -182,6 +183,7 @@ public class SearchCodeLib {
             contents = contents.substring(0, MAX_SPLIT_LENGTH);
         }
 
+        // TODO verificar tirso
         List<String> splitString = Arrays.asList(contents.replaceAll("[^a-zA-Z0-9]", " ").toLowerCase().split(" "));
 
         // Only the first 10000 to avoid causing too much slow-down

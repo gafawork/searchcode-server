@@ -40,11 +40,11 @@ public class SearchRouteService {
 
         var res = new codesearch_I();
 
-        res.page = results.getPage();
+        res.page = Math.toIntExact(results.getPage());
         res.matchterm = results.getQuery();
         res.query = results.getQuery();
         res.searchterm = results.getQuery();
-        res.total = results.getTotalHits();
+        res.total = Math.toIntExact(results.getTotalHits());
 
         if (res.page >= 0) {
             res.nextpage = res.page + 1;
@@ -145,6 +145,8 @@ public class SearchRouteService {
             isLiteral = true;
         }
 
+        // TODO TIRSO VERIFICAR
+        //query = StringEscapeUtils.escapeXml11(query);
 
         var searchResult = Singleton.getIndexService().search(query, facets, page, isLiteral, isExact);
 

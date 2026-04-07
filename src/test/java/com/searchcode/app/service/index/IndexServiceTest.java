@@ -579,7 +579,7 @@ public class IndexServiceTest extends TestCase {
         this.indexService.indexDocument(queue);
 
         // TODO CHECK ( INSERT PARAMETER ISEXACT EQUALS FALSE
-        SearchResult search = this.indexService.search("emaN*", null, 0, false, false);
+        SearchResult search = this.indexService.search("emanelif*", null, 0, false, false);
         assertThat(search.getTotalHits()).isGreaterThanOrEqualTo(1);
     }
 

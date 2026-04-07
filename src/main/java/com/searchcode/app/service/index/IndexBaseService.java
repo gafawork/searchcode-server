@@ -64,7 +64,7 @@ public abstract class IndexBaseService implements IIndexService {
      * Calculate the number of pages which can be searched through
      * TODO this needs more attention and testing on it as the results seem bizzare
      */
-    protected List<Integer> calculatePages(int numTotalHits, int noPages) {
+    protected List<Integer> calculatePages(long numTotalHits, long noPages) {
         var pages = new ArrayList<Integer>();
         if (numTotalHits != 0) {
             // Account for off by 1 errors

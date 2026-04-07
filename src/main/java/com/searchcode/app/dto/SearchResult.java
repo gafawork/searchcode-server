@@ -16,8 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SearchResult {
-    private int totalHits = 0;
-    private int page = 0;
+    private long totalHits = 0;
+    private long page = 0;
     private String query = Values.EMPTYSTRING;
     private List<String> altQuery = new ArrayList<>();
     private List<CodeResult> codeResultList = new ArrayList<>();
@@ -35,7 +35,7 @@ public class SearchResult {
 
     public SearchResult() {}
 
-    public SearchResult(int totalHits, int page, String query, List<CodeResult> codeResultList, List<Integer> pages, List<CodeFacetLanguage> languageFacetResults, List<CodeFacetRepo> repoFacetResults, List<CodeFacetOwner> repoOwnerResults, List<CodeFacetSource> codeFacetSources) {
+    public SearchResult(long totalHits, long page, String query, List<CodeResult> codeResultList, List<Integer> pages, List<CodeFacetLanguage> languageFacetResults, List<CodeFacetRepo> repoFacetResults, List<CodeFacetOwner> repoOwnerResults, List<CodeFacetSource> codeFacetSources) {
         this.setTotalHits(totalHits);
         this.setPage(page);
         this.setQuery(query);
@@ -47,19 +47,19 @@ public class SearchResult {
         this.setCodeFacetSources(codeFacetSources);
     }
 
-    public int getTotalHits() {
+    public long getTotalHits() {
         return totalHits;
     }
 
-    public void setTotalHits(int totalHits) {
+    public void setTotalHits(long totalHits) {
         this.totalHits = totalHits;
     }
 
-    public int getPage() {
+    public long getPage() {
         return page;
     }
 
-    public void setPage(int page) {
+    public void setPage(long page) {
         this.page = page;
     }
 
